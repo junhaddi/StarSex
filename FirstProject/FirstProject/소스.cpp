@@ -4,10 +4,14 @@
 #include <cstdlib>
 #include <ctime>
 #include "ConsoleFunctions.h"
+
+using namespace std;
+
+#pragma comment(lib, "winmm.lib")
 #define FPS 60
 #define GAME_WIDTH 40
 #define GAME_HEIGHT 20
-using namespace std;
+#define SOUND_FILE_NAME "bgm.wav"
 
 enum State {
 	TITLE,
@@ -18,8 +22,8 @@ enum State {
 // 게임 설정 초기화
 State state;
 int score;
-int playerX, playerY;
-int enemyX, enemyY;
+int playerX, playerY, _playerX, _playerY;
+int enemyX, enemyY, _enemyX, _enemyY;
 int starX, starY;
 
 void init();
@@ -44,6 +48,7 @@ void init() {
 	setCursorType(CursorInvisible);
 	srand((unsigned int)time(NULL));
 	State state = TITLE;
+	PlaySound(TEXT(SOUND_FILE_NAME), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 	reset();
 }
 
@@ -51,21 +56,29 @@ void reset() {
 	score = 0;
 	playerX = GAME_WIDTH / 2;
 	playerY = GAME_HEIGHT / 2;
+	_playerX = playerX;
+	_playerY = playerY;
 	enemyX = rand() % (GAME_WIDTH - 3) + 1;
 	enemyY = rand() % (GAME_HEIGHT - 2) + 1;
+	_enemyX = enemyX;
+	_enemyY = enemyY;
 	starX = rand() % (GAME_WIDTH - 3) + 1;
 	starY = rand() % (GAME_HEIGHT - 2) + 1;
+	system("cls");
 }
 
 void update() {
 	if (state == TITLE || state == OVER) {
-		if (_kbhit()) {
+		if (_kbhit() && _getch() == ' ') {
 			state = GAME;
 			reset();
 		}
 	}
 	else if (state == GAME) {
 		// 플레이어 이동
+		_playerX = playerX;
+		_playerY = playerY;
+
 		if (_kbhit()) {
 			switch (_getch()) {
 			case 65:
@@ -100,7 +113,9 @@ void update() {
 		}
 
 		// 나쁜놈 이동
-		int movePos = rand() % 10;
+		_enemyX = enemyX;
+		_enemyY = enemyY;
+		int movePos = rand() % 15;
 
 		if (movePos == 0) {
 			if (playerX > enemyX) {
@@ -142,6 +157,8 @@ void update() {
 		// 별 충돌
 		if (starX == playerX && starY == playerY) {
 			score++;
+			gotoxy(starX, starY);
+			cout << " ";
 			starX = rand() % (GAME_WIDTH - 3) + 1;
 			starY = rand() % (GAME_HEIGHT - 2) + 1;
 		}
@@ -151,7 +168,7 @@ void update() {
 void render() {
 	if (state == TITLE) {
 		gotoxy(4, 5);
-		cout << "별따먹자♥";
+		cout << "별따먹자♥        <START: SPACE>";
 		gotoxy(4, 10);
 		cout << "<-^->방향키로 이동";
 		gotoxy(4, 12);
@@ -164,27 +181,15 @@ void render() {
 		cout << "★	<-별";
 	}
 	else if (state == GAME) {
-		// 벽 그리기
-		/*for (int y = 0; y < GAME_HEIGHT; y++) {
-			for (int x = 0; x < GAME_WIDTH; x++) {
-				gotoxy(x, y);
-				cout << "■";
-			}
-		}*/
-
-		/*for (int y = 1; y < GAME_HEIGHT - 1; y++) {
-			for (int x = 1; x < GAME_WIDTH - 1; x++) {
-				gotoxy(x, y);
-				cout << " ";
-			}
-		}*/
-
 		// 플레이어 그리기
+		gotoxy(_playerX, _playerY);
+		cout << " ";
 		gotoxy(playerX, playerY);
-
 		cout << "＠";
 
 		// 나쁜놈 그리기
+		gotoxy(_enemyX, _enemyY);
+		cout << " ";
 		gotoxy(enemyX, enemyY);
 		cout << "*";
 
@@ -195,16 +200,11 @@ void render() {
 		// UI 그리기
 		gotoxy(16, 0);
 		cout << "SCORE: " << score;
-
-		// 백 버퍼 지우기
-		system("cls");
 	}
 	else if (state == OVER) {
 		gotoxy(16, 8);
 		cout << "GAME OVER";
-		gotoxy(16, 10);
-		cout << "SCORE: " << score;
+		gotoxy(15, 10);
+		cout << "<RE: SPACE>";
 	}
 }
-
-// TODO 더블버퍼링 구현
